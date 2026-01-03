@@ -28,7 +28,11 @@ class Game:
 		self.score_changed = True
 		self.score = 0
 		self.high_score = 0
+		self.apple_last_spawn = self.game_start_time
+		self.apple_spawn_delay = 750
 		self.overlay = OverlaySystem(pygame.Surface((settings.WIDTH, settings.HEIGHT), pygame.SRCALPHA).convert_alpha())
+
+		self.spawn_apple()
 
 	def handle_events(self):
 		for event in pygame.event.get():
@@ -45,15 +49,36 @@ class Game:
 			if event.type == pygame.WINDOWFOCUSGAINED or event.type == pygame.WINDOWRESTORED:
 				self.fps = settings.FPS
 
+	# Add chance too, maybe?
 	def spawn_apple(self):
-		'''if (current_time - self.enemy_last_spawn) > self.enemy_spawn_delay:
-			speed_multiplier = min(settings.BASE_SPEED + (minutes_played * (settings.SPEED_MULTIPLIER_PROGRESS / 4)), 1.1)
-			self.enemy_spawn_delay = max(250, self.enemy_spawn_delay / speed_multiplier)
-			enemy = Enemy(random.randint(5, 315), -15, self.theme, elapsed_ms)
-			self.all_sprites.add(enemy)
-			self.enemies.add(enemy)
-			self.enemy_last_spawn = current_time '''
-		pass
+		for apple in self.apples:
+			apple.kill()
+
+		snake_positions = []
+		snake_positions.append(self.player.rect.topleft)
+
+		for segment in self.player.body_segments:
+			snake_positions.append(segment.topleft)
+
+		max_attempts = 10
+		for _ in range(max_attempts):
+			grid_size = self.player.size
+			x = random.randrange(0, settings.WIDTH - grid_size, grid_size)
+			y = random.randrange(0, settings.HEIGHT - grid_size, grid_size)
+
+			position_free = True
+			for pos in snake_positions:
+				if (x, y) == pos:
+					position_free = False
+					break
+
+			if position_free:
+				apple = Apple(x, y)
+				self.all_sprites.add(apple)
+				self.apples.add(apple)
+				return
+
+		print("No position found!")
 
 	def update(self, dt):
 		if not self.running:
@@ -67,15 +92,20 @@ class Game:
 				else:
 					sprite.update(dt)
 
-		self.spawn_apple()
-
-		hits = pygame.sprite.spritecollide(self.player, self.apples, False)
-		if hits:
+		hits = pygame.sprite.spritecollide(self.player, self.apples, True)
+		for apple in hits:
 			self.score += 1
+
 			if self.score > self.high_score:
 				self.high_score = self.score
+
 			self.score_changed = True
 			self.player.grow_player()
+
+		current_time = pygame.time.get_ticks()
+		if (current_time - self.apple_last_spawn) > self.apple_spawn_delay:
+			self.spawn_apple()
+			self.apple_last_spawn = current_time
 
 	def draw(self):
 		self.screen.fill((10, 10, 10))
