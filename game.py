@@ -21,19 +21,21 @@ class Game:
 		self.all_sprites = pygame.sprite.Group()
 		self.apples = pygame.sprite.Group()
 
-		self.player = Player(self, settings.WIDTH // 2, settings.HEIGHT // 2, grow_pending=10)
+		self.player = Player(self, settings.WIDTH // 2, settings.HEIGHT // 2)
 		self.all_sprites.add(self.player)
 
 		self.game_start_time = pygame.time.get_ticks()
 		self.score_changed = True
-		self.score = self.player.grow_pending # If the player starts off long, the score starts off with the length of the player.
+		# If the player starts off long, the score starts off with the length of the player.
+		self.score = self.player.grow_pending
 		self.high_score = self.score
 		self.apple_last_spawn = self.game_start_time
 		self.apple_spawned = False
-		self.apple_spawn_delay = 1000
+		self.apple_spawn_delay = 1750
 		self.overlay = OverlaySystem(pygame.Surface((settings.WIDTH, settings.HEIGHT), pygame.SRCALPHA).convert_alpha())
 
-		self.spawn_apple(force=True) # Spawn the initial apple.
+		# Spawn the initial apple.
+		self.spawn_apple(self.game_start_time, force=True)
 
 	def handle_events(self):
 		for event in pygame.event.get():
@@ -43,6 +45,8 @@ class Game:
 			if event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_q:
 					self.kill_game()
+				if event.key == pygame.K_p:
+					self.change_player_length()
 
 			if event.type == pygame.WINDOWFOCUSLOST or event.type == pygame.WINDOWMINIMIZED:
 				self.fps /= 4
@@ -50,16 +54,16 @@ class Game:
 			if event.type == pygame.WINDOWFOCUSGAINED or event.type == pygame.WINDOWRESTORED:
 				self.fps = settings.FPS
 
-	def spawn_apple(self, force=False):
-		# 25% Chance for apple to spawn.
-		if (not self.apple_spawned and random.random() < 0.25) or force:
+	def spawn_apple(self, current_time, force=False):
+		# 40% Chance for apple to spawn.
+		if (not self.apple_spawned and random.random() < 0.4) or force:
 			snake_positions = []
 			snake_positions.append(self.player.rect.topleft)
 
 			for segment in self.player.body_segments:
 				snake_positions.append(segment.topleft)
 
-			max_attempts = 3
+			max_attempts = 5
 			for _ in range(max_attempts):
 				grid_size = self.player.size
 				x = random.randrange(0, settings.WIDTH - grid_size, grid_size)
@@ -76,6 +80,7 @@ class Game:
 					self.all_sprites.add(apple)
 					self.apples.add(apple)
 					self.apple_spawned = True
+					print(f"Apple spawned. Current time: {current_time}")
 					return
 
 			print("No position found!")
@@ -94,22 +99,25 @@ class Game:
 
 		hits = pygame.sprite.spritecollide(self.player, self.apples, True)
 		for apple in hits:
-			self.score += 1
-
-			if self.score > self.high_score:
-				self.high_score = self.score
-
-			self.score_changed = True
-			self.player.grow_player()
+			self.change_player_length()
 			self.apple_spawned = False
 
 		current_time = pygame.time.get_ticks()
 		if (current_time - self.apple_last_spawn) > self.apple_spawn_delay:
-			self.spawn_apple()
+			self.spawn_apple(current_time)
 			self.apple_last_spawn = current_time
 
+	def change_player_length(self):
+		self.score += 1
+
+		if self.score > self.high_score:
+			self.high_score = self.score
+
+		self.score_changed = True
+		self.player.grow_player()
+
 	def draw(self):
-		self.screen.fill((10, 10, 10))
+		self.screen.fill((5, 5, 5))
 
 		for sprite in self.all_sprites:
 			if hasattr(sprite, 'draw'):

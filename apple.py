@@ -6,7 +6,7 @@ class Apple(pygame.sprite.Sprite):
 	def __init__(self, x, y):
 		super().__init__()
 		self.size = 8
-		self.color = (0, 255, 0)
+		self.color = (204, 37, 44) # Cherry Red.
 
 		self.image = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
 		self.image.fill((0, 0, 0, 0))

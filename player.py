@@ -3,7 +3,7 @@ import random
 import settings
 
 class Player(pygame.sprite.Sprite):
-	def __init__(self, game, x, y, grow_pending):
+	def __init__(self, game, x, y, grow_pending=0):
 		super().__init__()
 		self.game = game
 
@@ -13,7 +13,7 @@ class Player(pygame.sprite.Sprite):
 		self.image.fill((0, 0, 0, 0))
 
 		self.rect = self.image.get_rect(center=(x, y))
-		self.color = (0, 150, 255)
+		self.color = (255, 250, 250) # Snow White.
 
 		# Snake-specific properties.
 		directions = [(0, -1), (-1, 0), (0, 1), (1, 0)]
@@ -21,10 +21,13 @@ class Player(pygame.sprite.Sprite):
 		self.direction = random.choice(directions)
 		self.next_direction = self.direction
 		self.move_timer = 0
-		self.move_interval = 0.1
+		self.move_interval = 0.15
+		self.min_move_interval = 0.0167 # Approximately 1/60 seconds.
 		self.grow_pending = grow_pending
 		self.position_history = []
 		self.history_length = 0
+		self.speed_increase_with_apple = 0.002
+		self.speed_level = 0
 
 	def update(self, dt, keys):
 		if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
@@ -52,19 +55,23 @@ class Player(pygame.sprite.Sprite):
 			self.rect.y += dy * self.size
 			self.wrap_around_head()
 
+			# Clearing old positions.
 			self.position_history.insert(0, old_head_pos)
 			if len(self.position_history) > self.history_length:
 				self.position_history.pop()
 
+			# Processing segments of the snake and wrap around logic.
 			for i, segment in enumerate(self.body_segments):
 				if i < len(self.position_history):
 					segment.x, segment.y = self.position_history[i]
 					self.wrap_around_segment(segment)
 
+			# Check for hit with itself.
 			if self.check_self_collision():
 				print("Player died!")
 				self.game.kill_game()
 
+			# Adding new segments to the snake.
 			while self.grow_pending > 0:
 				# New segment starts at head's old position
 				new_segment = pygame.Rect(old_head_pos[0], old_head_pos[1], self.size, self.size)
@@ -72,6 +79,7 @@ class Player(pygame.sprite.Sprite):
 				self.grow_pending -= 1
 				self.history_length += 1
 				self.position_history.append(old_head_pos)
+				self.increase_speed()
 
 	def wrap_around_head(self):
 		if self.rect.left >= settings.WIDTH:
@@ -97,6 +105,11 @@ class Player(pygame.sprite.Sprite):
 
 	def grow_player(self):
 		self.grow_pending += 1
+
+	def increase_speed(self):
+		self.move_interval -= self.speed_increase_with_apple
+		self.move_interval = max(self.min_move_interval, self.move_interval)
+		print(f"Move interval: {self.move_interval:.5f}; Segment: {self.history_length}")
 
 	def check_self_collision(self):
 		for segment in self.body_segments:
