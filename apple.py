@@ -4,7 +4,7 @@ import settings
 
 class Apple(pygame.sprite.Sprite):
 	def __init__(self, x, y):
-		super().__init__()
+		pygame.sprite.Sprite.__init__(self)
 		self.size = 8
 		self.color = (204, 37, 44) # Cherry Red.
 

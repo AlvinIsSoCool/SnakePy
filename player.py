@@ -4,7 +4,7 @@ import settings
 
 class Player(pygame.sprite.Sprite):
 	def __init__(self, game, x, y, grow_pending=0):
-		super().__init__()
+		pygame.sprite.Sprite.__init__(self)
 		self.game = game
 
 		# Head Properties.
@@ -109,7 +109,6 @@ class Player(pygame.sprite.Sprite):
 	def increase_speed(self):
 		self.move_interval -= self.speed_increase_with_apple
 		self.move_interval = max(self.min_move_interval, self.move_interval)
-		print(f"Move interval: {self.move_interval:.5f}; Segment: {self.history_length}")
 
 	def check_self_collision(self):
 		for segment in self.body_segments:
